@@ -1,0 +1,30 @@
+// operations required :
+/*
+    arithmatic operations : - + * /
+    func fun_name (x int32, y int32) int32 {
+        z int32;
+        z = x + y;
+        a = z;
+        return a;
+    }
+
+*/
+
+
+digit [0-9]
+letter [a-zA-Z]
+letter_underscore {_letter}
+number {digit}+
+identifier {letter_underscore}{letter_underscore}*{digit}*
+space { \t\n}
+
+tok_func ID ( ID , ID ) {
+    ID = ID + ID ;
+    return ID;
+}
+
+function -> prototype { body }
+
+prototype -> func ID ( decl )
+
+decl -> ID type , decl | ē
