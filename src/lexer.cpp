@@ -1,7 +1,10 @@
 #include "lexer.hpp"
 
 
-Token::Token(TokenType token_type, std::string identifier_name, std::int32_t number) : m_token_type(token_type), m_identifier_name(identifier_name), m_number(number) {}
+Token::Token(TokenType token_type, std::string identifier_name, std::int32_t number) : 
+    m_token_type(token_type), 
+    m_identifier_name(identifier_name), 
+    m_number(number) {}
 
 std::string Token::getName() {
     return m_identifier_name;
@@ -15,84 +18,128 @@ TokenType Token::getType() {
     return m_token_type;
 }
 
-Lexer::Lexer(std::string file_path) : m_current_token(TOK_EOF, "", 0), m_next_token(TOK_EOF, "", 0), m_file_input_stream(file_path, std::ifstream::in), m_current_char(' '), m_next_char(' ') {}
+void Token::print() {
+    std::string type_str;
+    switch (m_token_type) {
+        case TOK_FUNC: type_str = "TOK_FUNC"; break;
+        case TOK_RETURN: type_str = "TOK_RETURN"; break;
+        case TOK_ID: type_str = "TOK_ID"; break;
+        case TOK_NUMBER: type_str = "TOK_NUMBER"; break;
+        case TOK_SEMICOLON: type_str = "TOK_SEMICOLON"; break;
+        case TOK_LPAREN: type_str = "TOK_LPAREN"; break;
+        case TOK_RPAREN: type_str = "TOK_RPAREN"; break;
+        case TOK_LBRACE: type_str = "TOK_LBRACE"; break;
+        case TOK_RBRACE: type_str = "TOK_RBRACE"; break;
+        case TOK_COMMA: type_str = "TOK_COMMA"; break;
+        case TOK_PLUS: type_str = "TOK_PLUS"; break;
+        case TOK_MINUS: type_str = "TOK_MINUS"; break;
+        case TOK_MULT: type_str = "TOK_MULT"; break;
+        case TOK_DIV: type_str = "TOK_DIV"; break;
+        case TOK_EQ: type_str = "TOK_EQ"; break;
+        case TOK_EQEQ: type_str = "TOK_EQEQ"; break;
+        case TOK_GT: type_str = "TOK_GT"; break;
+        case TOK_GTEQ: type_str = "TOK_GTEQ"; break;
+        case TOK_LT: type_str = "TOK_LT"; break;
+        case TOK_LTEQ: type_str = "TOK_LTEQ"; break;
+        case TOK_EOF: type_str = "TOK_EOF"; break;
+        case TOK_ERR: type_str = "TOK_ERR"; break;
+        case TOK_UBUF: type_str = "TOK_UBUF"; break;
+        default: type_str = "UNKNOWN"; break;
+    }
+    std::cout << type_str << ' ' << m_identifier_name << ' ' << m_number << std::endl;
+}
+
+Lexer::Lexer(std::istream& input_stream) : 
+    m_current_token(TOK_EOF, "", 0), 
+    m_next_token(TOK_UBUF, "", 0), 
+    m_input_stream(input_stream), 
+    m_current_char(' '), 
+    m_next_char(-1) {}
 
 Token Lexer::getToken() {
-    if (m_current_token.getType() == TOK_EOF) {
-        eatToken();
+    if (m_next_token.getType() != TOK_UBUF) {
+        m_current_token = m_next_token;
+        m_next_token = Token(TOK_UBUF, "", 0);
+    } else {
+        m_current_token = getNextToken();
     }
     return m_current_token;
 }
 
 Token Lexer::peekNextToken() {
-}
-
-void Lexer::eatToken() {
-    if (m_next_token.getType() == TOK_EOF) m_current_token = getNextToken();
-    else m_current_token = m_next_token;
     m_next_token = getNextToken();
+    return m_next_token;
 }
 
 Token Lexer::getNextToken() {
 
-    char current_char = ' ';
+    m_current_char = getChar();
 
     // skip spaces
-    while (isspace(current_char)) {
-        current_char = getChar();
+    while (isspace(m_current_char)) {
+        m_current_char = getChar();
     }
 
     // identifier
-    if (isalpha(current_char)) {
-        std::string _identifier = "" + current_char;
-        while (isalnum(current_char = getChar())) {
-            _identifier += current_char;
+    if (isalpha(m_current_char)) {
+        std::string _identifier(1, m_current_char);
+        while (isalnum(m_current_char = getChar())) {
+            _identifier += m_current_char;
         }
+        ungetChar();
         if (_identifier == "func") return Token(TOK_FUNC, _identifier, 0);
+        else if (_identifier == "return") return Token(TOK_RETURN, _identifier, 0);
         else return Token(TOK_ID, _identifier, 0);
     }
 
     // number
-    if (isdigit(current_char)) {
-        int32_t _number = current_char - '0';
-        while (isdigit(current_char = getChar())) {
-            _number = _number * 10 + (current_char - '0');
+    if (isdigit(m_current_char)) {
+        int32_t _number = m_current_char - '0';
+        while (isdigit(m_current_char = getChar())) {
+            _number = _number * 10 + (m_current_char - '0');
         }
+        ungetChar();
         return Token(TOK_NUMBER, "", _number);
     }
 
     // some other token
-    switch (current_char) {
-        case '(' : return Token(TOK_LPAREN, "", 0);
-        case ')' : return Token(TOK_RPAREN, "", 0);
-        case '{' : return Token(TOK_LBRACE, "", 0);
-        case '}' : return Token(TOK_RBRACE, "", 0);
-        case ',' : return Token(TOK_COMMA, "", 0);
-        case '+' : return Token(TOK_PLUS, "", 0);
-        case '-' : return Token(TOK_MINUS, "", 0);
-        case '*' : return Token(TOK_MULT, "", 0);
-        case '/' : return Token(TOK_DIV, "", 0);
+    switch (m_current_char) {
+        case ';' : return Token(TOK_SEMICOLON, ";", 0);
+        case '(' : return Token(TOK_LPAREN, "(", 0);
+        case ')' : return Token(TOK_RPAREN, ")", 0);
+        case '{' : return Token(TOK_LBRACE, "{", 0);
+        case '}' : return Token(TOK_RBRACE, "}", 0);
+        case ',' : return Token(TOK_COMMA, ",", 0);
+        case '+' : return Token(TOK_PLUS, "+", 0);
+        case '-' : return Token(TOK_MINUS, "-", 0);
+        case '*' : return Token(TOK_MULT, "*", 0);
+        case '/' : return Token(TOK_DIV, "/", 0);
         case '=' : 
             if (getChar() == '=') {
-                return Token(TOK_EQEQ, "", 0);
+                return Token(TOK_EQEQ, "==", 0);
             } else {
                 ungetChar();
-                return Token(TOK_EQ, "", 0);
+                return Token(TOK_EQ, "=", 0);
             }
         case '>' : 
             if (getChar() == '=') {
-                return Token(TOK_GTEQ, "", 0);
+                return Token(TOK_GTEQ, ">=", 0);
             } else {
-                return Token(TOK_GT, "", 0);
+                ungetChar();
+                return Token(TOK_GT, ">", 0);
             }
         case '<' : 
             if (getChar() == '=') {
-                return Token(TOK_LTEQ, "", 0);
+                return Token(TOK_LTEQ, "<=", 0);
             } else {
-                return Token(TOK_LT, "", 0);
+                ungetChar();
+                return Token(TOK_LT, "<", 0);
             }
+        case EOF :
+            return Token(TOK_EOF, "0", 0);
         default :
             LexError("invalid input");
+            return Token(TOK_ERR, "", 0);
     }
 }
 
@@ -105,14 +152,12 @@ char Lexer::getChar() {
         m_current_char = m_next_char;
         m_next_char = -1;
     } else {
-        m_current_char = getchar();
+        m_current_char = m_input_stream.get();
     }
+    // std::cout << (char)m_current_char;
     return m_current_char;
 }
 
 void Lexer::ungetChar() {
     m_next_char = m_current_char;
 }
-
-// getChar -> a b c d
-// ungetChar -> 
