@@ -3,12 +3,13 @@
 #include <iostream>
 #include <fstream>
 #include <cstdint>
+#include <memory>
 
 enum TokenType {
     TOK_ERR = -100,
     TOK_UBUF = -101, // next token is not buffered
     TOK_EOF = -1, // end of file
-    TOK_FUNC = -2, // func
+    TOK_DEF = -2, // function definition
     TOK_RETURN = -3, // return
     TOK_ID = -4, // identifier
     TOK_NUMBER = -5, // number
@@ -47,8 +48,8 @@ class Token {
 
 class Lexer {
     private:
-        Token m_current_token;
-        Token m_next_token;
+        std::unique_ptr<Token> m_current_token;
+        std::unique_ptr<Token> m_next_token;
         std::istream& m_input_stream;
         int m_current_char;
         int m_next_char;
@@ -56,11 +57,11 @@ class Lexer {
     public:
         Lexer() = delete;
         Lexer(std::istream& input_stream);
-        Token getToken();
-        Token peekNextToken();
+        std::unique_ptr<Token> getToken();
+        std::unique_ptr<Token> peekNextToken();
 
     private:
-        Token getNextToken();
+        std::unique_ptr<Token> getNextToken();
         void LexError(std::string err_message);
         char getChar();
         void ungetChar();

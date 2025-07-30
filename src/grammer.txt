@@ -23,8 +23,28 @@ tok_func ID ( ID , ID ) {
     return ID;
 }
 
-function -> prototype { body }
+function -> def prototype { body }
+prototype -> ID ( decl )
+decl -> ID arg_names | ē
+arg_names -> , ID arg_names | ē
 
-prototype -> func ID ( decl )
 
-decl -> ID type , decl | ē
+E  -> T E' | ε
+E' -> + T E' | - T E' | ε
+
+T  -> F T'
+T' -> * F T' | / F T' | ε
+
+F  -> Unary | Primary
+
+Unary -> - Primary | + Primary
+
+Primary -> ID Trail | NUMBER | '(' NEE ')'
+
+Trail -> '(' args ')' | ε
+
+args -> NEE args' | ε
+
+args' -> , NEE args' | ε
+
+NEE -> T E'

@@ -21,7 +21,7 @@ TokenType Token::getType() {
 void Token::print() {
     std::string type_str;
     switch (m_token_type) {
-        case TOK_FUNC: type_str = "TOK_FUNC"; break;
+        case TOK_DEF: type_str = "TOK_DEF"; break;
         case TOK_RETURN: type_str = "TOK_RETURN"; break;
         case TOK_ID: type_str = "TOK_ID"; break;
         case TOK_NUMBER: type_str = "TOK_NUMBER"; break;
@@ -50,28 +50,28 @@ void Token::print() {
 }
 
 Lexer::Lexer(std::istream& input_stream) : 
-    m_current_token(TOK_EOF, "", 0), 
-    m_next_token(TOK_UBUF, "", 0), 
+    m_current_token(std::make_unique<Token>(TOK_EOF, "", 0)), 
+    m_next_token(std::make_unique<Token>(TOK_UBUF, "", 0)), 
     m_input_stream(input_stream), 
     m_current_char(' '), 
     m_next_char(-1) {}
 
-Token Lexer::getToken() {
-    if (m_next_token.getType() != TOK_UBUF) {
-        m_current_token = m_next_token;
-        m_next_token = Token(TOK_UBUF, "", 0);
+std::unique_ptr<Token> Lexer::getToken() {
+    if (m_next_token->getType() != TOK_UBUF) {
+        m_current_token = std::move(m_next_token);
+        m_next_token = std::make_unique<Token>(TOK_UBUF, "", 0);
     } else {
-        m_current_token = getNextToken();
+        m_current_token = std::move(getNextToken());
     }
-    return m_current_token;
+    return std::move(m_current_token);
 }
 
-Token Lexer::peekNextToken() {
+std::unique_ptr<Token> Lexer::peekNextToken() {
     m_next_token = getNextToken();
-    return m_next_token;
+    return std::move(m_next_token);
 }
 
-Token Lexer::getNextToken() {
+std::unique_ptr<Token> Lexer::getNextToken() {
 
     m_current_char = getChar();
 
@@ -87,9 +87,9 @@ Token Lexer::getNextToken() {
             _identifier += m_current_char;
         }
         ungetChar();
-        if (_identifier == "func") return Token(TOK_FUNC, _identifier, 0);
-        else if (_identifier == "return") return Token(TOK_RETURN, _identifier, 0);
-        else return Token(TOK_ID, _identifier, 0);
+        if (_identifier == "def") return std::make_unique<Token>(TOK_DEF, _identifier, 0);
+        else if (_identifier == "return") return std::make_unique<Token>(TOK_RETURN, _identifier, 0);
+        else return std::make_unique<Token>(TOK_ID, _identifier, 0);
     }
 
     // number
@@ -99,47 +99,47 @@ Token Lexer::getNextToken() {
             _number = _number * 10 + (m_current_char - '0');
         }
         ungetChar();
-        return Token(TOK_NUMBER, "", _number);
+        return std::make_unique<Token>(TOK_NUMBER, "", _number);
     }
 
     // some other token
     switch (m_current_char) {
-        case ';' : return Token(TOK_SEMICOLON, ";", 0);
-        case '(' : return Token(TOK_LPAREN, "(", 0);
-        case ')' : return Token(TOK_RPAREN, ")", 0);
-        case '{' : return Token(TOK_LBRACE, "{", 0);
-        case '}' : return Token(TOK_RBRACE, "}", 0);
-        case ',' : return Token(TOK_COMMA, ",", 0);
-        case '+' : return Token(TOK_PLUS, "+", 0);
-        case '-' : return Token(TOK_MINUS, "-", 0);
-        case '*' : return Token(TOK_MULT, "*", 0);
-        case '/' : return Token(TOK_DIV, "/", 0);
+        case ';' : return std::make_unique<Token>(TOK_SEMICOLON, ";", 0);
+        case '(' : return std::make_unique<Token>(TOK_LPAREN, "(", 0);
+        case ')' : return std::make_unique<Token>(TOK_RPAREN, ")", 0);
+        case '{' : return std::make_unique<Token>(TOK_LBRACE, "{", 0);
+        case '}' : return std::make_unique<Token>(TOK_RBRACE, "}", 0);
+        case ',' : return std::make_unique<Token>(TOK_COMMA, ",", 0);
+        case '+' : return std::make_unique<Token>(TOK_PLUS, "+", 0);
+        case '-' : return std::make_unique<Token>(TOK_MINUS, "-", 0);
+        case '*' : return std::make_unique<Token>(TOK_MULT, "*", 0);
+        case '/' : return std::make_unique<Token>(TOK_DIV, "/", 0);
         case '=' : 
             if (getChar() == '=') {
-                return Token(TOK_EQEQ, "==", 0);
+                return std::make_unique<Token>(TOK_EQEQ, "==", 0);
             } else {
                 ungetChar();
-                return Token(TOK_EQ, "=", 0);
+                return std::make_unique<Token>(TOK_EQ, "=", 0);
             }
         case '>' : 
             if (getChar() == '=') {
-                return Token(TOK_GTEQ, ">=", 0);
+                return std::make_unique<Token>(TOK_GTEQ, ">=", 0);
             } else {
                 ungetChar();
-                return Token(TOK_GT, ">", 0);
+                return std::make_unique<Token>(TOK_GT, ">", 0);
             }
         case '<' : 
             if (getChar() == '=') {
-                return Token(TOK_LTEQ, "<=", 0);
+                return std::make_unique<Token>(TOK_LTEQ, "<=", 0);
             } else {
                 ungetChar();
-                return Token(TOK_LT, "<", 0);
+                return std::make_unique<Token>(TOK_LT, "<", 0);
             }
         case EOF :
-            return Token(TOK_EOF, "0", 0);
+            return std::make_unique<Token>(TOK_EOF, "0", 0);
         default :
             LexError("invalid input");
-            return Token(TOK_ERR, "", 0);
+            return std::make_unique<Token>(TOK_ERR, "", 0);
     }
 }
 
